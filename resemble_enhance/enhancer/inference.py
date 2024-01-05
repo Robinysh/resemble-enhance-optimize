@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 @cache
-def load_enhancer(run_dir, device):
+def load_enhancer(run_dir, device, dtype=torch.float):
     if run_dir is None:
         run_dir = download()
     hp = HParams.load(run_dir)
@@ -20,22 +20,24 @@ def load_enhancer(run_dir, device):
     state_dict = torch.load(path, map_location="cpu")["module"]
     enhancer.load_state_dict(state_dict)
     enhancer.eval()
-    enhancer.to(device)
+    enhancer.to(device, dtype=dtype)
     return enhancer
 
 
 @torch.inference_mode()
-def denoise(dwav, sr, device, run_dir=None):
-    enhancer = load_enhancer(run_dir, device)
+def denoise(dwav, sr, device, run_dir=None, dtype=torch.float):
+    enhancer = load_enhancer(run_dir, device, dtype)
     return inference(model=enhancer.denoiser, dwav=dwav, sr=sr, device=device)
 
 
 @torch.inference_mode()
-def enhance(dwav, sr, device, nfe=32, solver="midpoint", lambd=0.5, tau=0.5, run_dir=None):
+def enhance(dwav, sr, device, nfe=32, solver="midpoint", lambd=0.5, tau=0.5,
+            run_dir=None, dtype=torch.float):
     assert 0 < nfe <= 128, f"nfe must be in (0, 128], got {nfe}"
     assert solver in ("midpoint", "rk4", "euler"), f"solver must be in ('midpoint', 'rk4', 'euler'), got {solver}"
     assert 0 <= lambd <= 1, f"lambd must be in [0, 1], got {lambd}"
     assert 0 <= tau <= 1, f"tau must be in [0, 1], got {tau}"
-    enhancer = load_enhancer(run_dir, device)
+    dwav = dwav.to(dtype=dtype)
+    enhancer = load_enhancer(run_dir, device, dtype)
     enhancer.configurate_(nfe=nfe, solver=solver, lambd=lambd, tau=tau)
     return inference(model=enhancer, dwav=dwav, sr=sr, device=device)

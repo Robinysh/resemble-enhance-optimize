@@ -58,8 +58,8 @@ def compute_offset(chunk1, chunk2, sr=44100):
         f_max=sr // 2,
     )
 
-    spec1 = mel_fn(chunk1).log1p()
-    spec2 = mel_fn(chunk2).log1p()
+    spec1 = mel_fn(chunk1.float()).log1p()
+    spec2 = mel_fn(chunk2.float()).log1p()
 
     corr = compute_corr(spec1, spec2)  # (F, T)
     corr = corr.mean(dim=0)  # (T,)
@@ -124,16 +124,17 @@ def inference(model, dwav, sr, device, chunk_seconds: float = 30.0, overlap_seco
     remove_weight_norm_recursively(model)
 
     hp: HParams = model.hp
+    dtype = dwav.dtype
 
     dwav = resample(
-        dwav,
+        dwav.float(),
         orig_freq=sr,
         new_freq=hp.wav_rate,
         lowpass_filter_width=64,
         rolloff=0.9475937167399596,
         resampling_method="sinc_interp_kaiser",
         beta=14.769656459379492,
-    )
+    ).to(dtype=dtype)
 
     del sr  # Everything is in hp.wav_rate now
 

@@ -101,7 +101,7 @@ class Denoiser(nn.Module):
         real = mag * cos  # (b f t)
         imag = mag * sin  # (b f t)
 
-        s = torch.complex(real, imag)  # (b f t)
+        s = torch.complex(real.float(), imag.float())  # (b f t)
 
         if s.isnan().any():
             logger.warning("NaN detected in ISTFT input.")

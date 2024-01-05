@@ -88,13 +88,6 @@ class IRMAE(nn.Module):
             x: (b c t) tensor
         """
         z = self.encoder(x)  # (b c t)
-        _ = self.estimator(z)  # Estimate the glboal mean and std of z
-        self.stats = {}
-        self.stats["z_mean"] = z.mean().item()
-        self.stats["z_std"] = z.std().item()
-        self.stats["z_abs_68"] = z.abs().quantile(0.6827).item()
-        self.stats["z_abs_95"] = z.abs().quantile(0.9545).item()
-        self.stats["z_abs_99"] = z.abs().quantile(0.9973).item()
         return z
 
     def decode(self, z):
