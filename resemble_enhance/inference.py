@@ -151,7 +151,10 @@ def inference(model, dwav, sr, device, chunk_seconds: float = 30.0, overlap_seco
 
     chunks = []
     for start in trange(0, dwav.shape[-1], hop_length):
-        chunks.append(inference_chunk(model, dwav[start : start + chunk_length], sr, device))
+        input_chunk = dwav[start : start + chunk_length]
+        if hasattr(model, 'denoiser') and len(input_chunk) < model.denoiser.stft_cfg['win_length'] // 2:
+            break
+        chunks.append(inference_chunk(model, input_chunk, sr, device))
 
     hwav = merge_chunks(chunks, chunk_length, hop_length, sr=sr, length=dwav.shape[-1])
 
